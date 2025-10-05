@@ -1,62 +1,119 @@
-const initDB = () => {
+import { useState, useEffect, useCallback } from 'react';
 
-  let db;
+const useData = () => {
+  const [myStories, setStories] = useState([]);
+  const [db, setDb] = useState(null);
 
-  const request = indexedDB.open("stories");
+  useEffect(() => {
+    const initDB = () => {
+      const request = indexedDB.open("myStories", 10);
 
-  request.onerror(() => {
-    console.log("something went wrong")
-  })
+      request.onerror = () => console.error("Failed to open IndexedDB");
 
-  request.onsuccess((e) => {
-    db = e.target.request;
-    console.log("db init success")
-  })
+      request.onsuccess = (e) => {
+        setDb(e.target.result);
+        loadStories(e.target.result);
+      };
 
-  db.createObjectStore("stories", { autoIncrement: true });
-  return db;
-}
+      request.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore("myStories", { autoIncrement: true });
+      };
+    };
 
-const addStory = (db, image) => {
+    initDB();
+  }, []);
 
-  // TODO : save time of upload file for remove every 23h
+  const loadStories = useCallback((dbInstance) => {
+    const transaction = dbInstance.transaction(["myStories"], "readonly");
+    const store = transaction.objectStore("myStories");
+    const storiesWithUrls = [];
+    const request = store.openCursor();
 
-  const request = db
-    .transaction(["stories"], "readwrite")
-    .objectStore("stories")
-    .add(image)
+    request.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        storiesWithUrls.push({
+          id: cursor.key,
+          url: URL.createObjectURL(cursor.value.data),
+          timestamp: cursor.value.timestamp || Date.now()
+        });
+        cursor.continue();
+      } else {
+        setStories(storiesWithUrls);
+      }
+    };
 
-  request.onsuccess = (event) => {
-    console.log("image saved")
-  };
-}
+    request.onerror = () => console.error("Failed to load stories");
+  }, []);
 
+  const addStory = useCallback((file) => {
+    if (!db || !file) return;
 
-const removeStory = (db, image) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const blob = new Blob([reader.result], { type: file.type });
+      const transaction = db.transaction(["myStories"], "readwrite");
+      const store = transaction.objectStore("myStories");
+      const storyData = {
+        data: blob,
+        timestamp: Date.now()
+      };
+      store.add(storyData);
 
-  const request = db
-    .transaction(["stories"], "readwrite")
-    .objectStore("stories")
-    .delete(image)
+      transaction.oncomplete = () => {
+        loadStories(db);
+      };
 
-  request.onsuccess = () => {
-    console.log("image removed")
-  };
-}
+      transaction.onerror = () => console.error("Failed to add story");
+    };
+    reader.readAsArrayBuffer(file);
+  }, [db, loadStories]);
 
+  const removeStory = useCallback((id) => {
+    if (!db) return;
 
-const getStories = (db, image) => {
+    const transaction = db.transaction(["myStories"], "readwrite");
+    const store = transaction.objectStore("myStories");
+    store.delete(id);
 
-  // TODO : make get-all and get-one function 
+    transaction.oncomplete = () => {
+      loadStories(db);
+    };
 
-  const request = db
-    .transaction(["stories"], "readwrite")
-    .objectStore("stories")
-    .delete(image)
+    transaction.onerror = () => console.error("Failed to remove story");
+  }, [db, loadStories]);
 
-  request.onsuccess = () => {
-    console.log("get all stories")
-  };
-}
+  // Optional: Clean up old myStories (e.g., older than 23 hours)
+  const cleanupOldStories = useCallback(() => {
+    if (!db) return;
 
-export { addStory, removeStory, getStories, initDB }
+    const cutoff = Date.now() - (23 * 60 * 60 * 1000); // 23 hours ago
+    const transaction = db.transaction(["myStories"], "readwrite");
+    const store = transaction.objectStore("myStories");
+    const request = store.openCursor();
+
+    request.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        if (cursor.value.timestamp < cutoff) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+
+    transaction.oncomplete = () => {
+      loadStories(db);
+    };
+  }, [db, loadStories]);
+
+  useEffect(() => {
+    if (db) {
+      cleanupOldStories();
+    }
+  }, [db, cleanupOldStories]);
+
+  return { myStories, addStory, removeStory, cleanupOldStories };
+};
+
+export default useData;
