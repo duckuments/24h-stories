@@ -7,46 +7,57 @@ const Stories = () => {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [progress, setProgress] = useState(0)
 
+  const [timeLeft, setTimeLeft] = useState(3);  // countdown from 3 seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const intervalRef = useRef(null);
+  const startTimeRef = useRef(null);
+
   const CloseModalButton = useRef(null)
 
-  // TODO : fix timer life cycle - fix duble Increment for currentStoryIndex
-
   useEffect(() => {
-    console.log(currentStoryIndex)
-  }, [currentStoryIndex])
+    if (isRunning) {
+      startTimeRef.current = Date.now();
+      intervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTimeRef.current;
+        const newProgress = Math.min((elapsed / 3000) * 100, 100);
+        setProgress(newProgress);
 
-
-  useEffect(() => {
-    if (myStories.length === 0) return;
-    setProgress(0)
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          if (currentStoryIndex === myStories.length - 1) {
-            CloseModalButton.current?.click();
+        if (elapsed >= 3000) {
+          clearInterval(intervalRef.current);
+          if (currentStoryIndex < myStories.length - 1) {
+            setCurrentStoryIndex((prev) => prev + 1);
+            setProgress(0);
           } else {
-            setCurrentStoryIndex((prevIndex) => (prevIndex + 1));
+            setIsRunning(false);
+            CloseModalButton.current?.click();
           }
-          return 0;
         }
-        return prev + (100 / 30); // Assuming 30 steps for 3 seconds
-      });
-    }, 100); // Update every 100ms
+      }, 50); // Update every 50ms for smooth animation
+    } else {
+      clearInterval(intervalRef.current);
+    }
 
-    return () => clearInterval(timer);
-  }, [currentStoryIndex, myStories.length]);
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, currentStoryIndex]);
+
 
   const handleOpenStory = (index) => {
     setCurrentStoryIndex(index)
+    setProgress(0);  // Reset progress to 0
     document.getElementById("story_modal").showModal();
+    if (timeLeft === 0) {
+      setTimeLeft(3);    // reset timer if it ended
+    }
+    setIsRunning(true);
   }
 
   const handleClickNext = () => {
     if (currentStoryIndex === myStories.length - 1) {
       CloseModalButton.current.click()
     } else {
+      setTimeLeft(3)
       setCurrentStoryIndex(currentStoryIndex + 1)
+      setProgress(0);  // Reset progress for new story
     }
   }
 
@@ -54,8 +65,10 @@ const Stories = () => {
     if (currentStoryIndex === 0) {
       setCurrentStoryIndex(myStories.length - 1);
     } else {
+      setTimeLeft(3)
       setCurrentStoryIndex(currentStoryIndex - 1)
     }
+    setProgress(0);  // Reset progress for new story
   }
 
   const handleDelete = () => {
