@@ -99,13 +99,21 @@ const Stories = () => {
               return <progress key={item.id} className="progress w-full" value={index === currentStoryIndex ? progress : (index < currentStoryIndex ? 100 : 0)} max="100"></progress>
             })}
           </div>
-          <img
-            className="w-full rounded-xl"
-            src={myStories[currentStoryIndex]?.url} />
+          <div className='flex flex-row items-center gap-3 '>
+            <button className="btn btn-ghost join-item" onClick={handleClickPrev}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="m8.369 12l4.747-8.968l1.768.936L10.632 12l4.252 8.032l-1.768.936z" /></svg>
+            </button>
+            <img
+              className="w-full rounded-xl"
+              src={myStories[currentStoryIndex]?.url} />
+            <button className="btn btn-ghost join-item" onClick={handleClickNext}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="m15.632 12l-4.748-8.968l-1.768.936L13.368 12l-4.252 8.032l1.768.936z" /></svg>
+            </button>
+          </div>
           <div className="join mt-5 w-full justify-center">
-            <button className="btn join-item" onClick={handleClickPrev}>{"<"}</button>
-            <button className="btn join-item" onClick={() => handleDelete()}>x</button>
-            <button className="btn join-item" onClick={handleClickNext}>{">"}</button>
+            <button className="btn btn-ghost join-item" onClick={() => handleDelete()}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M7 4V2h10v2h5v2h-2v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6H2V4zM6 6v14h12V6zm3 3h2v8H9zm4 0h2v8h-2z" /></svg>
+            </button>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
