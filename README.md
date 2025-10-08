@@ -11,7 +11,7 @@ A React application for viewing and managing stories, similar to Instagram stori
 
 ## Installation
 
-1. Clone the repository
+1. Clone the repository `https://github.com/duckuments/24-stories.git`
 2. Install dependencies: `npm install`
 3. Start the development server: `npm run dev`
 
