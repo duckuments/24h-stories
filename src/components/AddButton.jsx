@@ -1,9 +1,7 @@
 import { useRef } from 'react';
-import useData from '../data/useData';
 
-const AddButton = () => {
+const AddButton = ({ addStory }) => {
   const inputFileRef = useRef(null);
-  const { addStory } = useData();
 
   const handleClick = () => {
     inputFileRef.current.click();

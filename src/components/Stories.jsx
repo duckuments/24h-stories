@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import useData from '../data/useData';
 
-const Stories = () => {
-  const { myStories, removeStory } = useData();
+const Stories = ({ myStories, removeStory }) => {
 
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -38,7 +36,7 @@ const Stories = () => {
     }
 
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, currentStoryIndex]);
+  }, [isRunning, currentStoryIndex, myStories.length]);
 
 
   const handleOpenStory = (index) => {
